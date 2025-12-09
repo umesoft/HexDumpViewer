@@ -26,3 +26,6 @@ Canvas上に16進ダンプを描画し、スクロールバー・範囲選択機
 ## 備考
 - ローカルファイル（file://）で直接開くとESモジュールのCORS制限で動作しません。必ずWebサーバー経由でアクセスしてください。
 - 機能追加・カスタマイズは `hex_dump_lib.js` を編集してください。
+
+## デモ
+- [デモ](https://umesoft.co.jp/samples/hex_dump_viewer/)

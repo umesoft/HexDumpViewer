@@ -27,3 +27,6 @@ This viewer provides a web UI that displays a hexadecimal dump on a Canvas, with
 ## Notes
 - If you open the file directly (file://), ES module CORS restrictions will prevent it from working. Always access via a web server.
 - To add features or customize, edit `hex_dump_lib.js`.
+
+## Demo
+- [Demo](https://umesoft.co.jp/samples/hex_dump_viewer/)
