@@ -10,6 +10,9 @@ function HexDump(container, data) {
     let isSelecting = false;
     let autoScrollTimer = null;
 
+    // containerの内容をクリア
+    container.innerHTML = '';
+
     // container自体にflexレイアウトを設定
     container.style.width = '650px';
     container.style.display = 'flex';
@@ -325,6 +328,8 @@ function HexDump(container, data) {
             autoScrollTimer = null;
         }
     }
+
+    resizeCanvas();
 }
 
 export { HexDump };

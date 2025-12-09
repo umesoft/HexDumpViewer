@@ -2,14 +2,15 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Hex Dump Canvas</title>
+    <title>Hex Dump Viewer</title>
     <style>
         body { font-family: monospace; }
         canvas { border: 1px solid #333; }
     </style>
 </head>
 <body>
-    <h1>Hex Dump</h1>
+    <h1>Hex Dump Viewer</h1>
+    <input type="file" id="fileInput" style="margin-bottom: 8px;"><br>
     <div id="hexDumpContainer"></div>
     <script type="module">
         import './hex_dump_sample.js';
