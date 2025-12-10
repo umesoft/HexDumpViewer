@@ -1,6 +1,6 @@
 // HEX Dump表示ライブラリ
 
-function HexDump(container, data) {
+function HexDump(container, fileSize, getDataCallback) {
 
     let scrollLine = 0;
     let dragging = false;
@@ -14,7 +14,7 @@ function HexDump(container, data) {
     container.innerHTML = '';
 
     // container自体にflexレイアウトを設定
-    container.style.width = '650px';
+    container.style.width = '750px';
     container.style.display = 'flex';
     container.style.alignItems = 'flex-start';
 
@@ -43,27 +43,27 @@ function HexDump(container, data) {
         canvas.height = rect.height;
         scrollBar.style.height = canvas.height + 'px';
         // スクロール位置がデータ終端を超えていたら調整
-        const info = getScrollInfo(data, canvas);
+        const info = getScrollInfo(canvas);
         if (scrollLine > info.maxLine) {
             scrollLine = info.maxLine;
         }
         redraw();
     }
 
-    function getScrollInfo(data, canvas) {
+    function getScrollInfo(canvas) {
         const bytesPerLine = 16;
         const lineHeight = 24;
         const startY = 40;
         let visibleLines = Math.floor((canvas.height - startY) / lineHeight);
         if (visibleLines < 1) visibleLines = 1;
-        const totalLines = Math.ceil(data.length / bytesPerLine);
+        const totalLines = Math.ceil(fileSize / bytesPerLine);
         const maxLine = Math.max(0, totalLines - visibleLines);
         const endY = startY + visibleLines * lineHeight;
         return {bytesPerLine, lineHeight, startY, visibleLines, totalLines, maxLine, endY};
     }
 
-    function drawHexDump(canvas, binaryData, startLine = 0, selStart, selEnd) {
-        const info = getScrollInfo(data, canvas);
+    async function drawHexDump(canvas, startLine, selStart, selEnd) {
+        const info = getScrollInfo(canvas);
 
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -77,7 +77,7 @@ function HexDump(container, data) {
         const marginY2 = 0;
         const hexSample = Array(bytesPerLine).fill('ff').join(' ') + ' ';
         const hexWidth = ctx.measureText(hexSample).width;
-        const addrWidth = ctx.measureText('0000').width;
+        const addrWidth = ctx.measureText('0000000000000000').width;
         const hexOffset = startX + addrWidth + 16;
         const asciiOffset = hexOffset + hexWidth + 20;
         let offsetStr = '';
@@ -90,15 +90,19 @@ function HexDump(container, data) {
         ctx.font = '16px monospace';
 
         if (info.visibleLines < 1) info.visibleLines = 1;
+        const startOffset = startLine * bytesPerLine;
+        const readLength = info.visibleLines * bytesPerLine;
+        const binaryData = await getDataCallback(startOffset, readLength);
         for (let line = 0; line < info.visibleLines; line++) {
             const dataLine = startLine + line;
-            if (dataLine * bytesPerLine >= binaryData.length) break;
+            const lineOffset = (dataLine - startLine) * bytesPerLine;
+            if (startOffset + lineOffset >= fileSize) break;
             let hexStr = '';
             let asciiStr = '';
             for (let i = 0; i < bytesPerLine; i++) {
-                const idx = dataLine * bytesPerLine + i;
-                // 選択範囲ハイライト
-                if (selStart !== null && selEnd !== null && idx >= Math.min(selStart, selEnd) && idx <= Math.max(selStart, selEnd)) {
+                const idx = lineOffset + i;
+                const fileIdx = startOffset + lineOffset + i;
+                if (selStart !== null && selEnd !== null && fileIdx >= Math.min(selStart, selEnd) && fileIdx <= Math.max(selStart, selEnd)) {
                     ctx.fillStyle = '#cceeff';
                     ctx.fillRect(
                         hexOffset + ctx.measureText(Array(i).fill('ff').join(' ') + (i ? ' ' : '')).width - marginX1,
@@ -111,7 +115,7 @@ function HexDump(container, data) {
                         ctx.measureText('.').width,
                         info.lineHeight + marginY2);
                 }
-                if (idx < binaryData.length) {
+                if (fileIdx < fileSize && idx < binaryData.length) {
                     const byte = binaryData[idx];
                     hexStr += byte.toString(16).padStart(2, '0') + ' ';
                     asciiStr += (byte >= 0x20 && byte <= 0x7e) ? String.fromCharCode(byte) : '.';
@@ -120,7 +124,7 @@ function HexDump(container, data) {
                     asciiStr += ' ';
                 }
             }
-            const addrStr = (dataLine * bytesPerLine).toString(16).padStart(4, '0');
+            const addrStr = (BigInt(dataLine) * BigInt(bytesPerLine)).toString(16).padStart(16, '0');
             ctx.fillStyle = '#0066cc';
             ctx.fillText(addrStr, startX, info.startY + line * info.lineHeight);
             ctx.fillStyle = '#333';
@@ -131,7 +135,7 @@ function HexDump(container, data) {
     }
 
     function drawScrollBar() {
-        const info = getScrollInfo(data, canvas);
+        const info = getScrollInfo(canvas);
         if (info.maxLine === 0) {
             let thumb = scrollBar.querySelector('.thumb');
             if (thumb) {
@@ -159,7 +163,7 @@ function HexDump(container, data) {
     }
 
     function redraw() {
-        drawHexDump(canvas, data, scrollLine, selectStart, selectEnd);
+        drawHexDump(canvas, scrollLine, selectStart, selectEnd);
         drawScrollBar();
     }
 
@@ -169,11 +173,11 @@ function HexDump(container, data) {
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        const info = getScrollInfo(data, canvas);
+        const info = getScrollInfo(canvas);
         const line = Math.floor((y - info.startY) / info.lineHeight);
-        const col = Math.floor((x - (20 + ctx.measureText('0000').width + 16)) / ctx.measureText('ff ').width);
+        const col = Math.floor((x - (20 + ctx.measureText('0000000000000000').width + 16)) / ctx.measureText('ff ').width);
         const idx = (scrollLine + line) * info.bytesPerLine + col;
-        if (line >= 0 && col >= 0 && idx < data.length) {
+        if (line >= 0 && col >= 0 && idx < fileSize) {
             selectStart = idx;
             selectEnd = idx;
             isSelecting = true;
@@ -188,7 +192,7 @@ function HexDump(container, data) {
             dragOffsetY = e.clientY - rect.top;
             e.preventDefault();
         } else {
-            const info = getScrollInfo(data, canvas);
+            const info = getScrollInfo(canvas);
             const barRect = scrollBar.getBoundingClientRect();
             const y = e.clientY - barRect.top;
             const barHeight = scrollBar.clientHeight;
@@ -203,7 +207,7 @@ function HexDump(container, data) {
 
     document.addEventListener('mousemove', function(e) {
         if (dragging) {
-            const info = getScrollInfo(data, canvas);
+            const info = getScrollInfo(canvas);
             const barRect = scrollBar.getBoundingClientRect();
             const barHeight = scrollBar.clientHeight;
             const thumbHeight = Math.max(24, barHeight * info.visibleLines / info.totalLines);
@@ -223,9 +227,9 @@ function HexDump(container, data) {
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        const info = getScrollInfo(data, canvas);
+        const info = getScrollInfo(canvas);
         let line = Math.floor((y - info.startY) / info.lineHeight);
-        let col = Math.floor((x - (20 + ctx.measureText('0000').width + 16)) / ctx.measureText('ff ').width);
+        let col = Math.floor((x - (20 + ctx.measureText('0000000000000000').width + 16)) / ctx.measureText('ff ').width);
         // 範囲外ならタイマー開始
         if (y < info.startY) {
             if (!autoScrollTimer) {
@@ -247,8 +251,8 @@ function HexDump(container, data) {
             if (!autoScrollTimer) {
                 // --- 選択範囲更新 ---
                 const idx = (scrollLine + line) * info.bytesPerLine - 1;
-                if(data.length <= idx) {
-                    selectEnd = data.length - 1;
+                if(fileSize <= idx) {
+                    selectEnd = fileSize - 1;
                 } else {
                     selectEnd = idx;
                 }
@@ -270,8 +274,8 @@ function HexDump(container, data) {
             const idx = (scrollLine + line) * info.bytesPerLine + col;
             if (idx < 0) {
                 selectEnd = 0;
-            } else if(data.length <= idx) {
-                selectEnd = data.length - 1;
+            } else if(fileSize <= idx) {
+                selectEnd = fileSize - 1;
             } else {
                 selectEnd = idx;
             }
@@ -280,13 +284,13 @@ function HexDump(container, data) {
     });
 
     function autoScrollSelect(deltaLine) {
-        const info = getScrollInfo(data, canvas);
+        const info = getScrollInfo(canvas);
         if (0 < deltaLine) {
             if (scrollLine < info.maxLine) {
                 scrollLine++;
                 selectEnd = selectEnd + info.bytesPerLine;
-                if (data.length <= selectEnd) {
-                    selectEnd = data.length - 1;
+                if (fileSize <= selectEnd) {
+                    selectEnd = fileSize - 1;
                 }
                 redraw();
             }
@@ -306,7 +310,7 @@ function HexDump(container, data) {
     scrollBar.addEventListener('wheel', onWheel);
 
     function onWheel(e) {
-        const info = getScrollInfo(data, canvas);
+        const info = getScrollInfo(canvas);
         if (e.deltaY > 0 && scrollLine < info.maxLine) {
             scrollLine++;
             redraw();
