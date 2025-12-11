@@ -101,6 +101,18 @@ function HexDump(container, fileSize, getDataCallback) {
     scrollBar.id = 'scrollBar';
     container.appendChild(scrollBar);
 
+    function getScrollInfo(canvas) {
+        const bytesPerLine = 16;
+        const lineHeight = 24;
+        const startY = 40;
+        let visibleLines = Math.floor((canvas.height - startY) / lineHeight);
+        if (visibleLines < 1) visibleLines = 1;
+        const totalLines = Math.ceil(fileSize / bytesPerLine);
+        const maxLine = Math.max(0, totalLines - visibleLines);
+        const endY = startY + visibleLines * lineHeight;
+        return {bytesPerLine, lineHeight, startY, visibleLines, totalLines, maxLine, endY};
+    }
+    
     // ウィンドウリサイズ時にcanvasサイズも調整
     window.addEventListener('DOMContentLoaded', resizeCanvas);
     window.addEventListener('resize', resizeCanvas);
@@ -117,18 +129,6 @@ function HexDump(container, fileSize, getDataCallback) {
             scrollLine = info.maxLine;
         }
         redraw();
-    }
-
-    function getScrollInfo(canvas) {
-        const bytesPerLine = 16;
-        const lineHeight = 24;
-        const startY = 40;
-        let visibleLines = Math.floor((canvas.height - startY) / lineHeight);
-        if (visibleLines < 1) visibleLines = 1;
-        const totalLines = Math.ceil(fileSize / bytesPerLine);
-        const maxLine = Math.max(0, totalLines - visibleLines);
-        const endY = startY + visibleLines * lineHeight;
-        return {bytesPerLine, lineHeight, startY, visibleLines, totalLines, maxLine, endY};
     }
 
     async function drawHexDump(canvas, startLine, selStart, selEnd) {
@@ -399,6 +399,54 @@ function HexDump(container, fileSize, getDataCallback) {
             autoScrollTimer = null;
         }
     }
+
+    // キーボード操作
+    window.addEventListener('keydown', function(e) {
+        if (selectStart === null) return;
+        const info = getScrollInfo(canvas);
+        let cursor = selectEnd ?? selectStart;
+        let moved = false;
+        switch (e.key) {
+            case 'ArrowUp':
+                cursor -= info.bytesPerLine;
+                moved = true;
+                break;
+            case 'ArrowDown':
+                cursor += info.bytesPerLine;
+                moved = true;
+                break;
+            case 'ArrowLeft':
+                cursor -= 1;
+                moved = true;
+                break;
+            case 'ArrowRight':
+                cursor += 1;
+                moved = true;
+                break;
+            default:
+                return;
+        }
+        if (!moved) return;
+        cursor = Math.max(0, Math.min(fileSize - 1, cursor));
+        if (e.shiftKey) {
+            // Shift押下時は範囲選択
+            if (selectEnd === null) selectEnd = selectStart;
+            selectEnd = cursor;
+        } else {
+            // 通常は単一選択
+            selectStart = cursor;
+            selectEnd = cursor;
+        }
+        // スクロール位置調整
+        const line = Math.floor(cursor / info.bytesPerLine);
+        if (line < scrollLine) {
+            scrollLine = line;
+        } else if (line >= scrollLine + info.visibleLines) {
+            scrollLine = line - info.visibleLines + 1;
+        }
+        redraw();
+        e.preventDefault();
+    });
 
     resizeCanvas();
 }
