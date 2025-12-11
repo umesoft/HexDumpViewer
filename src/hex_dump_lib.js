@@ -373,6 +373,35 @@ function HexDump(container, fileSize, getDataCallback) {
         }
     }
 
+
+    // タッチ操作によるスクロール
+    let touchStartY = null;
+    let touchScrollLine = null;
+    canvas.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 1) {
+            touchStartY = e.touches[0].clientY;
+            touchScrollLine = scrollLine;
+        }
+    });
+    canvas.addEventListener('touchmove', function(e) {
+        if (touchStartY !== null && e.touches.length === 1) {
+            const info = getScrollInfo(canvas);
+            const deltaY = e.touches[0].clientY - touchStartY;
+            const lines = Math.round(-deltaY / info.lineHeight);
+            let newScrollLine = touchScrollLine + lines;
+            newScrollLine = Math.max(0, Math.min(info.maxLine, newScrollLine));
+            if (newScrollLine !== scrollLine) {
+                scrollLine = newScrollLine;
+                redraw();
+            }
+            e.preventDefault();
+        }
+    });
+    canvas.addEventListener('touchend', function(e) {
+        touchStartY = null;
+        touchScrollLine = null;
+    });
+
     canvas.addEventListener('wheel', onWheel);
     scrollBar.addEventListener('wheel', onWheel);
 
