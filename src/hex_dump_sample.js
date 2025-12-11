@@ -21,25 +21,82 @@ fileInput.addEventListener('change', (event) => {
     const chunkCache = new Map(); // offset: Uint8Array
 
     function getDataCallback(offset, length) {
-        const chunkStart = Math.floor(offset / CHUNK_SIZE) * CHUNK_SIZE;
-        const chunkEnd = Math.min(chunkStart + CHUNK_SIZE, fileSize);
-        const chunkKey = `${chunkStart}`;
-        if (chunkCache.has(chunkKey)) {
-            const chunk = chunkCache.get(chunkKey);
-            const startInChunk = offset - chunkStart;
-            return Promise.resolve(chunk.subarray(startInChunk, startInChunk + length));
+        const chunkStart1 = Math.floor(offset / CHUNK_SIZE) * CHUNK_SIZE;
+        const chunkEnd1 = Math.min(chunkStart1 + CHUNK_SIZE, fileSize);
+        const chunkKey1 = `${chunkStart1}`;
+        const startInChunk1 = offset - chunkStart1;
+        const endOffset = offset + length;
+        const chunkStart2 = Math.floor((endOffset - 1) / CHUNK_SIZE) * CHUNK_SIZE;
+        const chunkEnd2 = Math.min(chunkStart2 + CHUNK_SIZE, fileSize);
+        const chunkKey2 = `${chunkStart2}`;
+
+        // 1ブロックで収まる場合
+        if (chunkStart1 === chunkStart2) {
+            if (chunkCache.has(chunkKey1)) {
+                const chunk = chunkCache.get(chunkKey1);
+                return Promise.resolve(chunk.subarray(startInChunk1, startInChunk1 + length));
+            }
+            return new Promise((resolve, reject) => {
+                const blob = file.slice(chunkStart1, chunkEnd1);
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const chunk = new Uint8Array(e.target.result);
+                    chunkCache.set(chunkKey1, chunk);
+                    resolve(chunk.subarray(startInChunk1, startInChunk1 + length));
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(blob);
+            });
         }
-        return new Promise((resolve, reject) => {
-            const blob = file.slice(chunkStart, chunkEnd);
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const chunk = new Uint8Array(e.target.result);
-                chunkCache.set(chunkKey, chunk);
-                const startInChunk = offset - chunkStart;
-                resolve(chunk.subarray(startInChunk, startInChunk + length));
-            };
-            reader.onerror = reject;
-            reader.readAsArrayBuffer(blob);
+
+        // 2ブロックにまたがる場合
+        const promises = [];
+        // 1つ目のブロック
+        if (chunkCache.has(chunkKey1)) {
+            promises.push(Promise.resolve(chunkCache.get(chunkKey1)));
+        } else {
+            promises.push(new Promise((resolve, reject) => {
+                console.log(`read from ${chunkStart1} to ${chunkEnd1}`);
+                const blob = file.slice(chunkStart1, chunkEnd1);
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const chunk = new Uint8Array(e.target.result);
+                    chunkCache.set(chunkKey1, chunk);
+                    resolve(chunk);
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(blob);
+            }));
+        }
+        // 2つ目のブロック
+        if (chunkCache.has(chunkKey2)) {
+            promises.push(Promise.resolve(chunkCache.get(chunkKey2)));
+        } else {
+            promises.push(new Promise((resolve, reject) => {
+                console.log(`read from ${chunkStart2} to ${chunkEnd2}`);
+                const blob = file.slice(chunkStart2, chunkEnd2);
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const chunk = new Uint8Array(e.target.result);
+                    chunkCache.set(chunkKey2, chunk);
+                    resolve(chunk);
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(blob);
+            }));
+        }
+
+        return Promise.all(promises).then(([chunk1, chunk2]) => {
+            // 1つ目のブロックから必要分
+            const part1 = chunk1.subarray(startInChunk1);
+            // 2つ目のブロックから必要分
+            const part2Len = length - part1.length;
+            const part2 = chunk2.subarray(0, part2Len);
+            // 連結
+            const result = new Uint8Array(part1.length + part2.length);
+            result.set(part1, 0);
+            result.set(part2, part1.length);
+            return result;
         });
     }
 
