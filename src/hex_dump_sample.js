@@ -56,7 +56,6 @@ fileInput.addEventListener('change', (event) => {
             promises.push(Promise.resolve(chunkCache.get(chunkKey1)));
         } else {
             promises.push(new Promise((resolve, reject) => {
-                console.log(`read from ${chunkStart1} to ${chunkEnd1}`);
                 const blob = file.slice(chunkStart1, chunkEnd1);
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -73,7 +72,6 @@ fileInput.addEventListener('change', (event) => {
             promises.push(Promise.resolve(chunkCache.get(chunkKey2)));
         } else {
             promises.push(new Promise((resolve, reject) => {
-                console.log(`read from ${chunkStart2} to ${chunkEnd2}`);
                 const blob = file.slice(chunkStart2, chunkEnd2);
                 const reader = new FileReader();
                 reader.onload = function(e) {
