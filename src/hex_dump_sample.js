@@ -15,20 +15,19 @@ fileInput.addEventListener('change', (event) => {
     if (!file) {
         return;
     }
-    function getDataCallback(offset, length) {
-        return new Promise((resolve, reject) => {
-            const blob = file.slice(offset, offset + length);
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                resolve(new Uint8Array(e.target.result));
-            };
-            reader.onerror = reject;
-            reader.readAsArrayBuffer(blob);
-        });
-    }
     HexDump(
         container, 
         file.size, 
-        getDataCallback
+        (offset, length) => {
+            return new Promise((resolve, reject) => {
+                const blob = file.slice(offset, offset + length);
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    resolve(new Uint8Array(e.target.result));
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(blob);
+            });
+        }
     );
 });
