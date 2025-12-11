@@ -423,6 +423,14 @@ function HexDump(container, fileSize, getDataCallback) {
                 cursor += 1;
                 moved = true;
                 break;
+            case 'PageUp':
+                cursor -= info.bytesPerLine * info.visibleLines;
+                moved = true;
+                break;
+            case 'PageDown':
+                cursor += info.bytesPerLine * info.visibleLines;
+                moved = true;
+                break;
             default:
                 return;
         }
