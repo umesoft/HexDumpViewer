@@ -64,12 +64,15 @@ function HexDump(container, fileSize, getDataCallback) {
 
     async function drawHexDump(canvas, startLine, selStart, selEnd) {
         const info = getScrollInfo(canvas);
-
+        if (info.visibleLines < 1) info.visibleLines = 1;
+        const bytesPerLine = 16;
+        const startOffset = startLine * bytesPerLine;
+        const readLength = info.visibleLines * bytesPerLine;
+        const binaryData = await getDataCallback(startOffset, readLength);
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.font = '16px monospace';
         ctx.textBaseline = 'top';
-        const bytesPerLine = 16;
         const startX = 20;
         const marginX1 = 4;
         const marginX2 = 1;
@@ -88,11 +91,6 @@ function HexDump(container, fileSize, getDataCallback) {
         ctx.font = 'bold 16px monospace';
         ctx.fillText(offsetStr, hexOffset, info.startY - info.lineHeight);
         ctx.font = '16px monospace';
-
-        if (info.visibleLines < 1) info.visibleLines = 1;
-        const startOffset = startLine * bytesPerLine;
-        const readLength = info.visibleLines * bytesPerLine;
-        const binaryData = await getDataCallback(startOffset, readLength);
         for (let line = 0; line < info.visibleLines; line++) {
             const dataLine = startLine + line;
             const lineOffset = (dataLine - startLine) * bytesPerLine;
