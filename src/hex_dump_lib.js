@@ -77,8 +77,8 @@ function HexDump(container, fileSize, getDataCallback) {
 
         const promises = [];
 
-        // 1ブロックで収まる場合
         if (chunkStart1 === chunkStart2) {
+            // 1ブロックで収まる場合
             if (chunkCache.has(chunkKey1)) {
                 promises.push(Promise.resolve(chunkCache.get(chunkKey1)));
             } else {
@@ -88,36 +88,35 @@ function HexDump(container, fileSize, getDataCallback) {
                 chunkCache.set(chunkKey1, chunk1);
                 return chunk1.subarray(startInChunk1, startInChunk1 + length);
             });
-        }
-
-        // 2ブロックにまたがる場合
-
-        // 1つ目のブロック
-        if (chunkCache.has(chunkKey1)) {
-            promises.push(Promise.resolve(chunkCache.get(chunkKey1)));
         } else {
-            promises.push(getDataCallback(chunkStart1, chunkEnd1 - chunkStart1));
+            // 2ブロックにまたがる場合
+            // 1つ目のブロック
+            if (chunkCache.has(chunkKey1)) {
+                promises.push(Promise.resolve(chunkCache.get(chunkKey1)));
+            } else {
+                promises.push(getDataCallback(chunkStart1, chunkEnd1 - chunkStart1));
+            }
+            // 2つ目のブロック
+            if (chunkCache.has(chunkKey2)) {
+                promises.push(Promise.resolve(chunkCache.get(chunkKey2)));
+            } else {
+                promises.push(getDataCallback(chunkStart2, chunkEnd2 - chunkStart2));
+            }
+            return Promise.all(promises).then(([chunk1, chunk2]) => {
+                chunkCache.set(chunkKey1, chunk1);
+                chunkCache.set(chunkKey2, chunk2);
+                // 1つ目のブロックから必要分
+                const part1 = chunk1.subarray(startInChunk1);
+                // 2つ目のブロックから必要分
+                const part2Len = length - part1.length;
+                const part2 = chunk2.subarray(0, part2Len);
+                // 連結
+                const result = new Uint8Array(part1.length + part2.length);
+                result.set(part1, 0);
+                result.set(part2, part1.length);
+                return result;
+            });
         }
-        // 2つ目のブロック
-        if (chunkCache.has(chunkKey2)) {
-            promises.push(Promise.resolve(chunkCache.get(chunkKey2)));
-        } else {
-            promises.push(getDataCallback(chunkStart2, chunkEnd2 - chunkStart2));
-        }
-        return Promise.all(promises).then(([chunk1, chunk2]) => {
-            chunkCache.set(chunkKey1, chunk1);
-            chunkCache.set(chunkKey2, chunk2);
-            // 1つ目のブロックから必要分
-            const part1 = chunk1.subarray(startInChunk1);
-            // 2つ目のブロックから必要分
-            const part2Len = length - part1.length;
-            const part2 = chunk2.subarray(0, part2Len);
-            // 連結
-            const result = new Uint8Array(part1.length + part2.length);
-            result.set(part1, 0);
-            result.set(part2, part1.length);
-            return result;
-        });
     }
 
     async function drawHexDump(canvas, startLine, selStart, selEnd) {
