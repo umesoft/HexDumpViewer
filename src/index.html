@@ -11,6 +11,10 @@
 <body>
     <h1>Hex Dump Viewer</h1>
     <input type="file" id="fileInput" style="margin-bottom: 8px;"><br>
+    <div style="margin:8px 0;">
+        <label>アドレス: <input type="text" id="addressInput" size="18" style="font-family:monospace;width:160px;" placeholder="16進で入力"></label>
+        <button id="addressGoBtn">移動</button>
+    </div>
     <div id="hexDumpContainer"></div>
     <script type="module">
         import './hex_dump_sample.js';

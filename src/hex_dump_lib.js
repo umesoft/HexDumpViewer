@@ -431,6 +431,11 @@ function HexDump(container, fileSize, getDataCallback) {
 
     // キーボード操作
     window.addEventListener('keydown', function(e) {
+        // 入力欄にフォーカスがある場合は無効化
+        const active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+            return;
+        }
         if (selectStart === null) return;
         const info = getScrollInfo(canvas);
         let cursor = selectEnd ?? selectStart;
@@ -485,7 +490,24 @@ function HexDump(container, fileSize, getDataCallback) {
         e.preventDefault();
     });
 
+    // 外部からカーソル移動を受け付けるAPI
+    function moveCursorTo(addr) {
+        addr = Math.max(0, Math.min(fileSize - 1, addr|0));
+        selectStart = addr;
+        selectEnd = addr;
+        // スクロール位置調整（指定アドレスが一番上になるように）
+        const info = getScrollInfo(canvas);
+        const line = Math.floor(addr / info.bytesPerLine);
+        scrollLine = line;
+        // 範囲外防止
+        if (scrollLine > info.maxLine) scrollLine = info.maxLine;
+        if (scrollLine < 0) scrollLine = 0;
+        redraw();
+    }
+
     resizeCanvas();
+    // API返却
+    return { moveCursorTo };
 }
 
 export { HexDump };
