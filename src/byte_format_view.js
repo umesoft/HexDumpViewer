@@ -7,9 +7,17 @@ export function formatBytesByEndian(bytes, endian = 'BE') {
     if (!Array.isArray(bytes) && !(bytes instanceof Uint8Array)) return { hex: '', dec: '' };
     let arr = Array.from(bytes);
     if (endian === 'LE') arr = arr.slice().reverse();
-    // 16進
-    const hex = arr.map(b => b.toString(16).padStart(2, '0')).join(' ');
-    // 10進
-    const dec = arr.map(b => b.toString(10)).join(' ');
+    let hex = '-';
+    let dec = '-';
+    if (arr.length > 0 && arr.length <= 8) {
+        // 16進
+        hex = arr.map(b => b.toString(16).padStart(2, '0')).join(' ');
+        // 10進（BigIntでバイト連結）
+        let val = 0n;
+        for (let i = 0; i < arr.length; ++i) {
+            val = (val << 8n) | BigInt(arr[i]);
+        }
+        dec = val.toString(10);
+    }
     return { hex, dec };
 }

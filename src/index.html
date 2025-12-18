@@ -26,6 +26,9 @@
             border-left: 1px solid #ccc;
             padding-left: 24px;
         }
+        .byte-format-margin {
+            margin: 20px 0 24px 0;
+        }
     </style>
 </head>
 <body>
@@ -38,31 +41,40 @@
     <div class="main-flex">
         <div id="hexDumpContainer"></div>
         <div id="byteFormatArea">
-            <h2>バイトデータ加工表示</h2>
+            <h2>バイトデータ表示</h2>
             <div>
-                <label>エンディアン:
-                    <input type="radio" name="endian" value="BE" checked> ビッグエンディアン
-                    <input type="radio" name="endian" value="LE"> リトルエンディアン
+                <label style="margin-right:16px;">
+                    <input type="radio" name="endian" value="BE" checked>
+                    ビッグエンディアン
+                </label>
+                <label>
+                    <input type="radio" name="endian" value="LE">
+                    リトルエンディアン
                 </label>
             </div>
             <div style="margin:8px 0;">
-                <label>バイト配列入力 (カンマ区切り 例: 01,02,ff):
+                <label>バイト配列入力 (スペース区切り 例: 01 02 ff):
                     <input type="text" id="byteArrayInput" size="40" style="font-family:monospace;">
                 </label>
-                <button id="byteFormatBtn">表示</button>
+                <button id="byteFormatBtn">更新</button>
             </div>
-            <div>
-                <strong>16進:</strong> <span id="byteHexOut"></span><br>
-                <strong>10進:</strong> <span id="byteDecOut"></span>
-            </div>
+                <div class="byte-format-margin">
+                    <strong>16進 : </strong><span id="byteHexOut"></span>
+                </div>
+                <div class="byte-format-margin">
+                    <strong>10進 : </strong><span id="byteDecOut"></span>
+                </div>
         </div>
     </div>
     <script type="module">
         import './hex_dump_sample.js';
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js');
-            });
+            const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+            if (!isDev) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./service-worker.js');
+                });
+            }
         }
     </script>
 </body>

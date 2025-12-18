@@ -1,7 +1,8 @@
-const CACHE_NAME = 'hex-dump-viewer-cache-v1';
+const CACHE_NAME = 'hex-dump-viewer-cache-v2';
 const urlsToCache = [
   './index.html',
   './hex_dump_lib.js',
+  './byte_format_view.js',
   './hex_dump_sample.js',
   './manifest.json',
   './icon-192.png',
