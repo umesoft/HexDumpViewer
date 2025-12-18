@@ -505,9 +505,19 @@ function HexDump(container, fileSize, getDataCallback) {
         redraw();
     }
 
+    // 選択範囲のバイト配列を取得するAPI
+    async function getSelectedBytes() {
+        if (selectStart === null || selectEnd === null) return [];
+        const start = Math.min(selectStart, selectEnd);
+        const end = Math.max(selectStart, selectEnd);
+        if (end < start) return [];
+        const data = await getData(start, end - start + 1);
+        return Array.from(data);
+    }
+
     resizeCanvas();
     // API返却
-    return { moveCursorTo };
+    return { moveCursorTo, getSelectedBytes };
 }
 
 export { HexDump };

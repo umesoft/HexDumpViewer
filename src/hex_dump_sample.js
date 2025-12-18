@@ -1,15 +1,65 @@
+
 import { HexDump } from './hex_dump_lib.js';
+import { formatBytesByEndian } from './byte_format_view.js';
+
+let hexDumpApi = null; // HexDumpのAPI参照用
 
 const container = document.getElementById('hexDumpContainer');
 
 function resizeHexDumpContainer() {
-    container.style.height = (window.innerHeight - 110) + 'px';
+    container.style.height = (window.innerHeight - 150) + 'px';
 }
-window.addEventListener('DOMContentLoaded', resizeHexDumpContainer);
+
+// HEXダンプ選択→バイト配列入力欄反映
+function setByteArrayInputFromSelection() {
+    if (!hexDumpApi) return;
+    hexDumpApi.getSelectedBytes().then(arr => {
+        if (!arr || arr.length === 0) return;
+        // 16進2桁カンマ区切り
+        const str = arr.map(b => b.toString(16).padStart(2, '0')).join(',');
+        const input = document.getElementById('byteArrayInput');
+        if (input) input.value = str;
+    });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+
+    // HEXダンプコンテナサイズ調整
+    resizeHexDumpContainer();
+
+    // バイトデータ加工表示UIの制御
+    const input = document.getElementById('byteArrayInput');
+    const btn = document.getElementById('byteFormatBtn');
+    const hexOut = document.getElementById('byteHexOut');
+    const decOut = document.getElementById('byteDecOut');
+    const endianRadios = document.getElementsByName('endian');
+    if (!input || !btn || !hexOut || !decOut || !endianRadios) return;
+
+    btn.addEventListener('click', () => {
+        // 入力値をバイト配列に変換
+        const arr = (input.value || '').split(',').map(s => s.trim()).filter(s => s !== '').map(s => parseInt(s, 16));
+        if (arr.some(isNaN)) {
+            hexOut.textContent = '入力エラー';
+            decOut.textContent = '';
+            return;
+        }
+        // エンディアン取得
+        let endian = 'BE';
+        for (const r of endianRadios) {
+            if (r.checked) endian = r.value;
+        }
+        // 表示
+        const { hex, dec } = formatBytesByEndian(arr, endian);
+        hexOut.textContent = hex;
+        decOut.textContent = dec;
+    });
+
+    // HEXダンプcanvasクリック・選択時に反映
+    container.addEventListener('mouseup', setByteArrayInputFromSelection);
+    container.addEventListener('keyup', setByteArrayInputFromSelection);
+});
+
 window.addEventListener('resize', resizeHexDumpContainer);
-
-
-let hexDumpApi = null; // HexDumpのAPI参照用
 
 fileInput.addEventListener('change', (event) => {
     const file = event.target.files[0];

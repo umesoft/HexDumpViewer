@@ -8,6 +8,24 @@
     <style>
         body { font-family: monospace; }
         canvas { border: 1px solid #333; }
+        .main-flex {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 32px;
+        }
+        #hexDumpContainer {
+            flex: 2 1 0;
+            min-width: 350px;
+        }
+        #byteFormatArea {
+            flex: 1 1 400px;
+            min-width: 40px;
+            max-width: 400px;
+            margin-top: 0;
+            border-left: 1px solid #ccc;
+            padding-left: 24px;
+        }
     </style>
 </head>
 <body>
@@ -17,7 +35,28 @@
         <label>アドレス: <input type="text" id="addressInput" size="18" style="font-family:monospace;width:160px;" placeholder="16進で入力"></label>
         <button id="addressGoBtn">移動</button>
     </div>
-    <div id="hexDumpContainer"></div>
+    <div class="main-flex">
+        <div id="hexDumpContainer"></div>
+        <div id="byteFormatArea">
+            <h2>バイトデータ加工表示</h2>
+            <div>
+                <label>エンディアン:
+                    <input type="radio" name="endian" value="BE" checked> ビッグエンディアン
+                    <input type="radio" name="endian" value="LE"> リトルエンディアン
+                </label>
+            </div>
+            <div style="margin:8px 0;">
+                <label>バイト配列入力 (カンマ区切り 例: 01,02,ff):
+                    <input type="text" id="byteArrayInput" size="40" style="font-family:monospace;">
+                </label>
+                <button id="byteFormatBtn">表示</button>
+            </div>
+            <div>
+                <strong>16進:</strong> <span id="byteHexOut"></span><br>
+                <strong>10進:</strong> <span id="byteDecOut"></span>
+            </div>
+        </div>
+    </div>
     <script type="module">
         import './hex_dump_sample.js';
         if ('serviceWorker' in navigator) {
