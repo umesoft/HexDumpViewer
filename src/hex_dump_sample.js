@@ -9,6 +9,7 @@ const container = document.getElementById('hexDumpContainer');
 const byte_input = document.getElementById('byteArrayInput');
 const hexOut = document.getElementById('byteHexOut');
 const decOut = document.getElementById('byteDecOut');
+const binOut = document.getElementById('byteBinOut');
 const endianRadios = document.getElementsByName('endian');
 
 function resizeHexDumpContainer() {
@@ -22,9 +23,10 @@ function updateByteFormatDisplay(arr) {
         if (r.checked) endian = r.value;
     }
     // 表示
-    const { hex, dec } = formatBytesByEndian(arr, endian);
+    const { hex, dec, bin } = formatBytesByEndian(arr, endian);
     hexOut.textContent = hex;
     decOut.textContent = dec;
+    binOut.textContent = bin;
 }  
 
 // HEXダンプ選択→バイト配列入力欄反映
@@ -54,6 +56,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (arr.some(isNaN)) {
             hexOut.textContent = '-';
             decOut.textContent = '-';
+            binOut.textContent = '-';
             return;
         }
         // 表示
