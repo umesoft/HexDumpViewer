@@ -302,7 +302,7 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
             const displayCount = Math.min(results.length, 100);
             for (let i = 0; i < displayCount; i++) {
                 const offset = results[i];
-                const offsetHex = '0x' + offset.toString(16).toUpperCase().padStart(8, '0');
+                const offsetHex = offset.toString(16).toUpperCase().padStart(8, '0');
                 listHtml += `<div class="search-result-item" data-offset="${offset}" data-length="${pattern.length}">${offsetHex}</div>`;
             }
             listHtml += '</div>';
