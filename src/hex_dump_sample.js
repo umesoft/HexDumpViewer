@@ -33,15 +33,23 @@ function updateByteFormatDisplay(arr) {
 function drawBinCanvas(canvas, arr) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const maxLines = 10;
-    const cellW = 22, cellH = 28;
-    const offsetW = 48;
-    ctx.font = '16px monospace';
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
-    // スクロールバーは省略（最大10行のみ表示）
-    let lines = arr.slice(0, maxLines);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const maxLines = 10;
+        const cellW = 22, cellH = 28;
+        const offsetW = 48;
+        ctx.font = '16px monospace';
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        // 表示する行数を決定
+        let lines = arr;
+        // canvasの高さを全行分に自動調整
+        let wrap = document.getElementById('byteBinCanvasWrap');
+        if (wrap) {
+            wrap.style.maxHeight = (cellH * maxLines) + 'px';
+            canvas.height = cellH * lines.length;
+        } else {
+            canvas.height = cellH * Math.min(lines.length, maxLines);
+        }
     for (let i = 0; i < lines.length; ++i) {
         const b = lines[i];
         const y = i * cellH + cellH/2 + 4;
