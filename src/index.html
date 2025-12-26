@@ -28,26 +28,60 @@
         }
         .byte-format-margin {
             margin: 20px 0 24px 0;
-                .search-results {
-                    max-height: 240px;
-                    overflow-y: auto;
-                    border: 1px solid #ccc;
-                    background: #fafafa;
-                    margin-top: 8px;
-                    font-size: 14px;
-                }
-                .search-result-item {
-                    padding: 4px 8px;
-                    cursor: pointer;
-                    border-bottom: 1px solid #eee;
-                }
-                .search-result-item:hover {
-                    background: #e0f0ff;
-                }
-                .search-result-item.selected {
-                    background: #cce5ff;
-                    font-weight: bold;
-                }
+        }
+        .search-results {
+            max-height: 240px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            background: #fafafa;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        .search-result-item {
+            padding: 4px 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .search-result-item:hover {
+            background: #e0f0ff;
+        }
+        .search-result-item.selected {
+            background: #cce5ff;
+            font-weight: bold;
+        }
+        .collapsible-section {
+            margin-bottom: 16px;
+        }
+        .collapsible-header {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 4px 0;
+            user-select: none;
+        }
+        .collapsible-header:hover {
+            color: #0066cc;
+        }
+        .collapsible-header h2 {
+            margin: 8px 0;
+            display: inline;
+        }
+        .collapsible-toggle {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+        }
+        .collapsible-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            max-height: 2000px;
+        }
+        .collapsible-content.collapsed {
+            max-height: 0;
         }
     </style>
 </head>
@@ -57,59 +91,80 @@
     <div class="main-flex">
         <div id="hexDumpContainer"></div>
         <div id="byteFormatArea">
-            <h2>データ移動</h2>
-            <div style="margin:8px 0;">
-                <label>アドレス: <input type="text" id="addressInput" size="18" style="font-family:monospace;width:160px;" placeholder="16進で入力"></label>
-                <button id="addressGoBtn">移動</button>
+            <div class="collapsible-section">
+                <div class="collapsible-header" data-section="move">
+                    <span class="collapsible-toggle">▶</span>
+                    <h2>データ移動</h2>
+                </div>
+                <div class="collapsible-content collapsed" id="move-content">
+                    <div style="margin:8px 0;">
+                        <label>アドレス: <input type="text" id="addressInput" size="18" style="font-family:monospace;width:160px;" placeholder="16進で入力"></label>
+                        <button id="addressGoBtn">移動</button>
+                    </div>
+                </div>
             </div>
-            
-                        <h2>データ検索</h2>
-                        <div style="margin:8px 0;">
-                            <div style="margin-bottom:8px;">
-                                <label style="margin-right:16px;">
-                                    <input type="radio" name="searchType" value="hex" checked>
-                                    16進
-                                </label>
-                                <label>
-                                    <input type="radio" name="searchType" value="ascii">
-                                    ASCII
-                                </label>
-                            </div>
-                            <div style="margin-bottom:8px;">
-                                <label>検索データ: 
-                                    <input type="text" id="searchInput" size="30" style="font-family:monospace;" placeholder="16進: 01 02 ff / ASCII: text">
-                                </label>
-                                <button id="searchBtn">検索</button>
-                            </div>
-                            <div id="searchResults" class="search-results" style="display:none;"></div>
+
+            <div class="collapsible-section">
+                <div class="collapsible-header" data-section="search">
+                    <span class="collapsible-toggle">▶</span>
+                    <h2>データ検索</h2>
+                </div>
+                <div class="collapsible-content collapsed" id="search-content">
+                    <div style="margin:8px 0;">
+                        <div style="margin-bottom:8px;">
+                            <label style="margin-right:16px;">
+                                <input type="radio" name="searchType" value="hex" checked>
+                                16進
+                            </label>
+                            <label>
+                                <input type="radio" name="searchType" value="ascii">
+                                ASCII
+                            </label>
                         </div>
-            
-            <h2>バイトデータ表示</h2>
-            <div>
-                <label style="margin-right:16px;">
-                    <input type="radio" name="endian" value="BE" checked>
-                    ビッグエンディアン
-                </label>
-                <label>
-                    <input type="radio" name="endian" value="LE">
-                    リトルエンディアン
-                </label>
+                        <div style="margin-bottom:8px;">
+                            <label>検索データ: 
+                                <input type="text" id="searchInput" size="30" style="font-family:monospace;" placeholder="16進: 01 02 ff / ASCII: text">
+                            </label>
+                            <button id="searchBtn">検索</button>
+                        </div>
+                        <div id="searchResults" class="search-results" style="display:none;"></div>
+                    </div>
+                </div>
             </div>
-            <div style="margin:8px 0;">
-                <label>バイト配列入力 (スペース区切り 例: 01 02 ff):
-                    <input type="text" id="byteArrayInput" size="40" style="font-family:monospace;">
-                </label>
-                <button id="byteFormatBtn">更新</button>
+
+            <div class="collapsible-section">
+                <div class="collapsible-header" data-section="byte">
+                    <span class="collapsible-toggle">▶</span>
+                    <h2>バイトデータ表示</h2>
+                </div>
+                <div class="collapsible-content collapsed" id="byte-content">
+                    <div>
+                        <label style="margin-right:16px;">
+                            <input type="radio" name="endian" value="BE" checked>
+                            ビッグエンディアン
+                        </label>
+                        <label>
+                            <input type="radio" name="endian" value="LE">
+                            リトルエンディアン
+                        </label>
+                    </div>
+                    <div style="margin:8px 0;">
+                        <label>バイト配列入力 (スペース区切り 例: 01 02 ff):
+                            <input type="text" id="byteArrayInput" size="40" style="font-family:monospace;">
+                        </label>
+                        <button id="byteFormatBtn">更新</button>
+                    </div>
+                    <div class="byte-format-margin">
+                        <strong>16進 : </strong><span id="byteHexOut"></span>
+                    </div>
+                    <div class="byte-format-margin">
+                        <strong>10進 : </strong><span id="byteDecOut"></span>
+                    </div>
+                    <div class="byte-format-margin">
+                        <strong>2進 : </strong><div id="byteBinCanvasWrap" style="max-height:320px; overflow-y:auto;"><canvas id="byteBinCanvas" width="350" height="320" style="border:1px solid #888; background:#fff; display:block;"></canvas></div>
+                    </div>
+                </div>
             </div>
-                <div class="byte-format-margin">
-                    <strong>16進 : </strong><span id="byteHexOut"></span>
-                </div>
-                <div class="byte-format-margin">
-                    <strong>10進 : </strong><span id="byteDecOut"></span>
-                </div>
-                <div class="byte-format-margin">
-                    <strong>2進 : </strong><div id="byteBinCanvasWrap" style="max-height:320px; overflow-y:auto;"><canvas id="byteBinCanvas" width="350" height="320" style="border:1px solid #888; background:#fff; display:block;"></canvas></div>
-                </div>
         </div>
     </div>
     <script type="module">

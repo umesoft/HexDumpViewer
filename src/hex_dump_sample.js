@@ -12,6 +12,37 @@ const decOut = document.getElementById('byteDecOut');
 const binCanvas = document.getElementById('byteBinCanvas');
 const endianRadios = document.getElementsByName('endian');
 
+// 折りたたみ状態の管理
+const collapsibleState = {
+    move: false,     // データ移動は折りたたみ状態で開始
+    search: false,   // データ検索は折りたたみ状態で開始
+    byte: false      // バイトデータ表示は折りたたみ状態で開始
+};
+
+function initCollapsible() {
+    document.querySelectorAll('.collapsible-header').forEach(header => {
+        header.addEventListener('click', toggleCollapsible);
+    });
+}
+
+function toggleCollapsible(e) {
+    const sectionName = e.currentTarget.getAttribute('data-section');
+    const contentDiv = document.getElementById(sectionName + '-content');
+    const toggleSpan = e.currentTarget.querySelector('.collapsible-toggle');
+    
+    collapsibleState[sectionName] = !collapsibleState[sectionName];
+    
+    if (collapsibleState[sectionName]) {
+        // 展開
+        contentDiv.classList.remove('collapsed');
+        toggleSpan.textContent = '▼';
+    } else {
+        // 折りたたみ
+        contentDiv.classList.add('collapsed');
+        toggleSpan.textContent = '▶';
+    }
+}
+
 function resizeHexDumpContainer() {
     container.style.height = (window.innerHeight - 150) + 'px';
 }
@@ -149,6 +180,9 @@ function setByteArrayInputFromSelection() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+
+    // 折りたたみ機能の初期化
+    initCollapsible();
 
     // HEXダンプコンテナサイズ調整
     resizeHexDumpContainer();
