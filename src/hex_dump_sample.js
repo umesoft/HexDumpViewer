@@ -153,3 +153,93 @@ document.getElementById('addressGoBtn').addEventListener('click', () => {
     }
     hexDumpApi.moveCursorTo(addr);
 });
+
+// 検索機能
+document.getElementById('searchBtn').addEventListener('click', async () => {
+    if (!hexDumpApi) {
+        alert('ファイルを読み込んでください');
+        return;
+    }
+    
+    const searchInput = document.getElementById('searchInput').value.trim();
+    if (!searchInput) {
+        alert('検索データを入力してください');
+        return;
+    }
+    
+    const searchType = document.querySelector('input[name="searchType"]:checked').value;
+    let pattern = [];
+    
+    try {
+        if (searchType === 'hex') {
+            // 16進数の場合（スペース区切り）
+            const hexValues = searchInput.split(/\s+/).filter(s => s !== '');
+            pattern = hexValues.map(s => {
+                const val = parseInt(s, 16);
+                if (isNaN(val) || val < 0 || val > 255) {
+                    throw new Error('無効な16進数値: ' + s);
+                }
+                return val;
+            });
+        } else {
+            // ASCIIの場合
+            pattern = Array.from(searchInput).map(c => c.charCodeAt(0));
+        }
+        
+        if (pattern.length === 0) {
+            alert('検索パターンが空です');
+            return;
+        }
+        
+        // 検索実行
+        const resultsDiv = document.getElementById('searchResults');
+        resultsDiv.innerHTML = '<div style="padding:8px; color:#666;">検索中...</div>';
+        resultsDiv.style.display = 'block';
+        
+        const results = await hexDumpApi.searchData(new Uint8Array(pattern));
+        
+        if (results.length === 0) {
+            resultsDiv.innerHTML = '<div style="padding:8px; color:#999;">見つかりませんでした</div>';
+        } else {
+            let html = '<div style="padding:4px 8px; background:#e8e8e8; font-weight:bold;">';
+            html += `検索結果: ${results.length}件${results.length >= 1000 ? ' (最大1000件まで表示)' : ''}</div>`;
+
+            const toHexStr = bytes => Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+            const toAsciiStr = bytes => Array.from(bytes).map(b => (b >= 0x20 && b <= 0x7e) ? String.fromCharCode(b) : '.').join('');
+
+            // 最大100件表示、それ以上はスクロール
+            const displayCount = Math.min(results.length, 100); // 実際は全件表示してスクロール
+            for (let i = 0; i < displayCount; i++) {
+                const offsetHex = '0x' + results[i].toString(16).toUpperCase().padStart(8, '0');
+                html += `<div class="search-result-item" data-offset="${results[i]}">` +
+                        `<div><strong>${offsetHex}</strong></div>` +
+                    `</div>`;
+            }
+            
+            resultsDiv.innerHTML = html;
+            
+            // クリックイベントを設定
+            resultsDiv.querySelectorAll('.search-result-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const offset = parseInt(item.getAttribute('data-offset'));
+                    hexDumpApi.moveCursorTo(offset);
+                    
+                    // 選択状態を表示
+                    resultsDiv.querySelectorAll('.search-result-item').forEach(el => {
+                        el.classList.remove('selected');
+                    });
+                    item.classList.add('selected');
+                });
+            });
+        }
+    } catch (e) {
+        alert('検索エラー: ' + e.message);
+    }
+});
+
+// Enterキーで検索実行
+document.getElementById('searchInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        document.getElementById('searchBtn').click();
+    }
+});

@@ -28,19 +28,62 @@
         }
         .byte-format-margin {
             margin: 20px 0 24px 0;
+                .search-results {
+                    max-height: 240px;
+                    overflow-y: auto;
+                    border: 1px solid #ccc;
+                    background: #fafafa;
+                    margin-top: 8px;
+                    font-size: 14px;
+                }
+                .search-result-item {
+                    padding: 4px 8px;
+                    cursor: pointer;
+                    border-bottom: 1px solid #eee;
+                }
+                .search-result-item:hover {
+                    background: #e0f0ff;
+                }
+                .search-result-item.selected {
+                    background: #cce5ff;
+                    font-weight: bold;
+                }
         }
     </style>
 </head>
 <body>
     <h1>Hex Dump Viewer</h1>
     <input type="file" id="fileInput" style="margin-bottom: 8px;"><br>
-    <div style="margin:8px 0;">
-        <label>アドレス: <input type="text" id="addressInput" size="18" style="font-family:monospace;width:160px;" placeholder="16進で入力"></label>
-        <button id="addressGoBtn">移動</button>
-    </div>
     <div class="main-flex">
         <div id="hexDumpContainer"></div>
         <div id="byteFormatArea">
+            <h2>データ移動</h2>
+            <div style="margin:8px 0;">
+                <label>アドレス: <input type="text" id="addressInput" size="18" style="font-family:monospace;width:160px;" placeholder="16進で入力"></label>
+                <button id="addressGoBtn">移動</button>
+            </div>
+            
+                        <h2>データ検索</h2>
+                        <div style="margin:8px 0;">
+                            <div style="margin-bottom:8px;">
+                                <label style="margin-right:16px;">
+                                    <input type="radio" name="searchType" value="hex" checked>
+                                    16進
+                                </label>
+                                <label>
+                                    <input type="radio" name="searchType" value="ascii">
+                                    ASCII
+                                </label>
+                            </div>
+                            <div style="margin-bottom:8px;">
+                                <label>検索データ: 
+                                    <input type="text" id="searchInput" size="30" style="font-family:monospace;" placeholder="16進: 01 02 ff / ASCII: text">
+                                </label>
+                                <button id="searchBtn">検索</button>
+                            </div>
+                            <div id="searchResults" class="search-results" style="display:none;"></div>
+                        </div>
+            
             <h2>バイトデータ表示</h2>
             <div>
                 <label style="margin-right:16px;">

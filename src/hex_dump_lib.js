@@ -515,9 +515,45 @@ function HexDump(container, fileSize, getDataCallback) {
         return Array.from(data);
     }
 
+    // データ検索API
+    async function searchData(pattern) {
+        if (!pattern || pattern.length === 0) return [];
+        const results = [];
+        const SEARCH_CHUNK_SIZE = 64 * 1024; // 64KB単位で検索
+        let offset = 0;
+    
+        while (offset < fileSize && results.length < 1000) { // 最大1000件まで
+            const chunkSize = Math.min(SEARCH_CHUNK_SIZE, fileSize - offset);
+            const overlapSize = pattern.length - 1; // パターンがまたがる可能性を考慮
+            const readSize = chunkSize + (offset + chunkSize < fileSize ? overlapSize : 0);
+        
+            const data = await getData(offset, readSize);
+        
+            // Boyer-Moore-Horspoolアルゴリズム簡易版で検索
+            for (let i = 0; i <= data.length - pattern.length; i++) {
+                let match = true;
+                for (let j = 0; j < pattern.length; j++) {
+                    if (data[i + j] !== pattern[j]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    // 発見時点のバイト列も保持して返す（デバッグ用途）
+                    results.push(offset + i);
+                    if (results.length >= 1000) break;
+                }
+            }
+        
+            offset += chunkSize;
+        }
+    
+        return results;
+    }
+
     resizeCanvas();
     // API返却
-    return { moveCursorTo, getSelectedBytes };
+    return { moveCursorTo, getSelectedBytes, searchData };
 }
 
 export { HexDump };
