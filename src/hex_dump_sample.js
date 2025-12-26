@@ -329,6 +329,13 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
     }
 });
 
+// 検索結果クリアボタン
+document.getElementById('searchClearBtn').addEventListener('click', () => {
+    const resultsDiv = document.getElementById('searchResults');
+    resultsDiv.innerHTML = '';
+    resultsDiv.style.display = 'none';
+});
+
 // Enterキーで検索実行
 document.getElementById('searchInput').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
