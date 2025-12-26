@@ -19,7 +19,9 @@ export function formatBytesByEndian(bytes, endian = 'BE') {
             val = (val << 8n) | BigInt(arr[i]);
         }
         dec = val.toString(10);
-        // 2進（1バイトごとに1行）
+    }
+    // 2進（1バイトごとに1行）: 8バイト超でも表示
+    if (arr.length > 0) {
         bin = arr.map(b => b.toString(2).padStart(8, '0')).join('\n');
     }
     return { hex, dec, bin };
