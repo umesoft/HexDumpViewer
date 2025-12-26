@@ -539,7 +539,6 @@ function HexDump(container, fileSize, getDataCallback) {
                     }
                 }
                 if (match) {
-                    // 発見時点のバイト列も保持して返す（デバッグ用途）
                     results.push(offset + i);
                     if (results.length >= 1000) break;
                 }

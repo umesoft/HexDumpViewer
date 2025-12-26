@@ -286,30 +286,28 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
         
         // 検索実行
         const resultsDiv = document.getElementById('searchResults');
-        resultsDiv.innerHTML = '<div style="padding:8px; color:#666;">検索中...</div>';
+        resultsDiv.innerHTML = '<div class="search-results-header" style="padding:8px;">検索中...</div>';
         resultsDiv.style.display = 'block';
         
         const results = await hexDumpApi.searchData(new Uint8Array(pattern));
         
         if (results.length === 0) {
-            resultsDiv.innerHTML = '<div style="padding:8px; color:#999;">見つかりませんでした</div>';
+            resultsDiv.innerHTML = '<div class="search-results-header">見つかりませんでした</div>';
         } else {
-            let html = '<div style="padding:4px 8px; background:#e8e8e8; font-weight:bold;">';
-            html += `検索結果: ${results.length}件${results.length >= 1000 ? ' (最大1000件まで表示)' : ''}</div>`;
+            let headerHtml = '<div class="search-results-header">';
+            headerHtml += `検索結果: ${results.length}件${results.length >= 1000 ? ' (最大1000件まで表示)' : ''}</div>`;
 
-            const toHexStr = bytes => Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
-            const toAsciiStr = bytes => Array.from(bytes).map(b => (b >= 0x20 && b <= 0x7e) ? String.fromCharCode(b) : '.').join('');
-
+            let listHtml = '<div class="search-results-list">';
             // 最大100件表示、それ以上はスクロール
-            const displayCount = Math.min(results.length, 100); // 実際は全件表示してスクロール
+            const displayCount = Math.min(results.length, 100);
             for (let i = 0; i < displayCount; i++) {
-                const offsetHex = '0x' + results[i].toString(16).toUpperCase().padStart(8, '0');
-                html += `<div class="search-result-item" data-offset="${results[i]}">` +
-                        `<div><strong>${offsetHex}</strong></div>` +
-                    `</div>`;
+                const offset = results[i];
+                const offsetHex = '0x' + offset.toString(16).toUpperCase().padStart(8, '0');
+                listHtml += `<div class="search-result-item" data-offset="${offset}">${offsetHex}</div>`;
             }
+            listHtml += '</div>';
             
-            resultsDiv.innerHTML = html;
+            resultsDiv.innerHTML = headerHtml + listHtml;
             
             // クリックイベントを設定
             resultsDiv.querySelectorAll('.search-result-item').forEach(item => {

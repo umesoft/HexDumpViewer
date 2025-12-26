@@ -30,12 +30,25 @@
             margin: 20px 0 24px 0;
         }
         .search-results {
-            max-height: 240px;
-            overflow-y: auto;
+            overflow: hidden;
             border: 1px solid #ccc;
             background: #fafafa;
             margin-top: 8px;
             font-size: 14px;
+            display: flex;
+            flex-direction: column;
+        }
+        .search-results-header {
+            padding: 4px 8px;
+            background: #e8e8e8;
+            font-weight: bold;
+            flex-shrink: 0;
+            border-bottom: 1px solid #ccc;
+        }
+        .search-results-list {
+            max-height: 240px;
+            overflow-y: auto;
+            flex: 1;
         }
         .search-result-item {
             padding: 4px 8px;
