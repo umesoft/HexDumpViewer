@@ -491,10 +491,16 @@ function HexDump(container, fileSize, getDataCallback) {
     });
 
     // 外部からカーソル移動を受け付けるAPI
-    function moveCursorTo(addr) {
+    function moveCursorTo(addr, length) {
         addr = Math.max(0, Math.min(fileSize - 1, addr|0));
         selectStart = addr;
-        selectEnd = addr;
+        if (length !== undefined && length > 0) {
+            // 長さ指定がある場合は範囲選択
+            selectEnd = Math.min(fileSize - 1, addr + length - 1);
+        } else {
+            // 長さ指定がない場合は単一選択
+            selectEnd = addr;
+        }
         // スクロール位置調整（指定アドレスが一番上になるように）
         const info = getScrollInfo(canvas);
         const line = Math.floor(addr / info.bytesPerLine);

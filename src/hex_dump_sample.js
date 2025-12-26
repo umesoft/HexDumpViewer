@@ -303,7 +303,7 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
             for (let i = 0; i < displayCount; i++) {
                 const offset = results[i];
                 const offsetHex = '0x' + offset.toString(16).toUpperCase().padStart(8, '0');
-                listHtml += `<div class="search-result-item" data-offset="${offset}">${offsetHex}</div>`;
+                listHtml += `<div class="search-result-item" data-offset="${offset}" data-length="${pattern.length}">${offsetHex}</div>`;
             }
             listHtml += '</div>';
             
@@ -313,7 +313,8 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
             resultsDiv.querySelectorAll('.search-result-item').forEach(item => {
                 item.addEventListener('click', () => {
                     const offset = parseInt(item.getAttribute('data-offset'));
-                    hexDumpApi.moveCursorTo(offset);
+                    const length = parseInt(item.getAttribute('data-length'));
+                    hexDumpApi.moveCursorTo(offset, length);
                     
                     // 選択状態を表示
                     resultsDiv.querySelectorAll('.search-result-item').forEach(el => {
