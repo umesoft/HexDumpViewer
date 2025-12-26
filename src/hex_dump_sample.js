@@ -26,37 +26,89 @@ function updateByteFormatDisplay(arr) {
     const { hex, dec, bin } = formatBytesByEndian(arr, endian);
     hexOut.textContent = hex;
     decOut.textContent = dec;
-    drawBinCanvas(binCanvas, arr);
+    // 仮想スクロール用インデックス
+    let binScrollIndex = 0;
+    drawBinCanvas(binCanvas, arr, binScrollIndex);
+
+    // スクロールイベント登録
+    binCanvas.onwheel = (e) => {
+        const maxLines = 10;
+        const maxScroll = Math.max(0, arr.length - maxLines);
+        if (e.deltaY > 0 && binScrollIndex < maxScroll) {
+            binScrollIndex++;
+            drawBinCanvas(binCanvas, arr, binScrollIndex);
+        } else if (e.deltaY < 0 && binScrollIndex > 0) {
+            binScrollIndex--;
+            drawBinCanvas(binCanvas, arr, binScrollIndex);
+        }
+        e.preventDefault();
+    };
+
+    // スクロールバーのドラッグ操作
+    let dragging = false, dragStartY = 0, dragStartIdx = 0;
+    binCanvas.onmousedown = (e) => {
+        // スクロールバーの位置・サイズ計算
+        const maxLines = 10;
+        const cellH = 28;
+        const barW = 12;
+        const barH = Math.max(24, (maxLines / arr.length) * (cellH * maxLines));
+        const maxScroll = Math.max(0, arr.length - maxLines);
+        const barY = (binScrollIndex / (arr.length - maxLines)) * ((cellH * maxLines) - barH);
+        const barX = binCanvas.width - barW - 2;
+        if (
+            arr.length > maxLines &&
+            e.offsetX > barX &&
+            e.offsetX < barX + barW &&
+            e.offsetY >= barY &&
+            e.offsetY <= barY + barH
+        ) {
+            dragging = true;
+            dragStartY = e.offsetY;
+            dragStartIdx = binScrollIndex;
+        }
+    };
+    binCanvas.onmousemove = (e) => {
+        if (dragging) {
+            const maxLines = 10;
+            const cellH = 28;
+            const barH = Math.max(24, (maxLines / arr.length) * (cellH * maxLines));
+            const maxScroll = Math.max(0, arr.length - maxLines);
+            const deltaY = e.offsetY - dragStartY;
+            const scrollArea = (cellH * maxLines) - barH;
+            let newIdx = dragStartIdx + Math.round((deltaY / scrollArea) * maxScroll);
+            newIdx = Math.max(0, Math.min(maxScroll, newIdx));
+            if (newIdx !== binScrollIndex) {
+                binScrollIndex = newIdx;
+                drawBinCanvas(binCanvas, arr, binScrollIndex);
+            }
+        }
+    };
+    binCanvas.onmouseup = () => { dragging = false; };
+    binCanvas.onmouseleave = () => { dragging = false; };
 }
 
 // 2進数表示をcanvasに描画
 function drawBinCanvas(canvas, arr) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const maxLines = 10;
-        const cellW = 22, cellH = 28;
-        const offsetW = 48;
-        ctx.font = '16px monospace';
-        ctx.textBaseline = 'middle';
-        ctx.textAlign = 'center';
-        // 表示する行数を決定
-        let lines = arr;
-        // canvasの高さを全行分に自動調整
-        let wrap = document.getElementById('byteBinCanvasWrap');
-        if (wrap) {
-            wrap.style.maxHeight = (cellH * maxLines) + 'px';
-            canvas.height = cellH * lines.length;
-        } else {
-            canvas.height = cellH * Math.min(lines.length, maxLines);
-        }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const maxLines = 10;
+    const cellW = 22, cellH = 28;
+    const offsetW = 48;
+    canvas.height = cellH * maxLines; // 常に10行分の高さに固定
+    ctx.font = '16px monospace';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    // 仮想スクロール
+    let scrollIdx = arguments[2] || 0;
+    let lines = arr.slice(scrollIdx, scrollIdx + maxLines);
     for (let i = 0; i < lines.length; ++i) {
         const b = lines[i];
         const y = i * cellH + cellH/2 + 4;
         // オフセット
         ctx.fillStyle = '#888';
         ctx.textAlign = 'right';
-        ctx.fillText((i).toString(16).padStart(2, '0').toUpperCase() + ':', offsetW-8, y);
+        ctx.fillText((scrollIdx + i).toString(16).padStart(2, '0').toUpperCase() + ':', offsetW-8, y);
         // 各ビット
         ctx.textAlign = 'center';
         const bits = b.toString(2).padStart(8, '0');
@@ -68,11 +120,18 @@ function drawBinCanvas(canvas, arr) {
             ctx.fillText(bits[j], x, y);
         }
     }
-    // 残り行数表示
+    // スクロールバー描画
     if (arr.length > maxLines) {
-        ctx.fillStyle = '#c00';
-        ctx.textAlign = 'left';
-        ctx.fillText('... (' + (arr.length - maxLines) + ' more)', offsetW, maxLines * cellH + 16);
+        const barW = 12;
+        const barX = canvas.width - barW - 2;
+        const barH = Math.max(24, (maxLines / arr.length) * (cellH * maxLines));
+        const maxScroll = Math.max(0, arr.length - maxLines);
+        const barY = (scrollIdx / (arr.length - maxLines)) * ((cellH * maxLines) - barH);
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = '#888';
+        ctx.fillRect(barX, barY, barW, barH);
+        ctx.restore();
     }
 }
 
