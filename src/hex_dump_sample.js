@@ -9,7 +9,7 @@ const container = document.getElementById('hexDumpContainer');
 const byte_input = document.getElementById('byteArrayInput');
 const hexOut = document.getElementById('byteHexOut');
 const decOut = document.getElementById('byteDecOut');
-const binOut = document.getElementById('byteBinOut');
+const binCanvas = document.getElementById('byteBinCanvas');
 const endianRadios = document.getElementsByName('endian');
 
 function resizeHexDumpContainer() {
@@ -26,8 +26,47 @@ function updateByteFormatDisplay(arr) {
     const { hex, dec, bin } = formatBytesByEndian(arr, endian);
     hexOut.textContent = hex;
     decOut.textContent = dec;
-    binOut.textContent = bin;
-}  
+    drawBinCanvas(binCanvas, arr);
+}
+
+// 2進数表示をcanvasに描画
+function drawBinCanvas(canvas, arr) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const maxLines = 10;
+    const cellW = 22, cellH = 28;
+    const offsetW = 48;
+    ctx.font = '16px monospace';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    // スクロールバーは省略（最大10行のみ表示）
+    let lines = arr.slice(0, maxLines);
+    for (let i = 0; i < lines.length; ++i) {
+        const b = lines[i];
+        const y = i * cellH + cellH/2 + 4;
+        // オフセット
+        ctx.fillStyle = '#888';
+        ctx.textAlign = 'right';
+        ctx.fillText((i).toString(16).padStart(2, '0').toUpperCase() + ':', offsetW-8, y);
+        // 各ビット
+        ctx.textAlign = 'center';
+        const bits = b.toString(2).padStart(8, '0');
+        for (let j = 0; j < 8; ++j) {
+            const x = offsetW + j * cellW + cellW/2;
+            ctx.strokeStyle = '#888';
+            ctx.strokeRect(offsetW + j * cellW, i * cellH + 2, cellW, cellH);
+            ctx.fillStyle = '#222';
+            ctx.fillText(bits[j], x, y);
+        }
+    }
+    // 残り行数表示
+    if (arr.length > maxLines) {
+        ctx.fillStyle = '#c00';
+        ctx.textAlign = 'left';
+        ctx.fillText('... (' + (arr.length - maxLines) + ' more)', offsetW, maxLines * cellH + 16);
+    }
+}
 
 // HEXダンプ選択→バイト配列入力欄反映
 function setByteArrayInputFromSelection() {
