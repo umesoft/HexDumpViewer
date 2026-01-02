@@ -47,6 +47,12 @@ function resizeHexDumpContainer() {
     container.style.height = (window.innerHeight - 150) + 'px';
 }
 
+// 2進数部を強調表示するための連想配列
+var byteFormats = {"ID":6, "名前":20, "設定値":12};
+
+// byteFormatCanvasの選択状態を管理
+var selectedFormatIndex = -1;
+
 function updateByteFormatDisplay(arr) {
     // エンディアン取得
     let endian = 'BE';
@@ -59,18 +65,37 @@ function updateByteFormatDisplay(arr) {
     decOut.textContent = dec;
     // 仮想スクロール用インデックス
     let binScrollIndex = 0;
+    window._lastArrForBin = arr;
     drawBinCanvas(binCanvas, arr, binScrollIndex);
 
     // スクロールイベント登録
     binCanvas.onwheel = (e) => {
-        const maxLines = 10;
+        const maxLines = 5;
         const maxScroll = Math.max(0, arr.length - maxLines);
         if (e.deltaY > 0 && binScrollIndex < maxScroll) {
             binScrollIndex++;
-            drawBinCanvas(binCanvas, arr, binScrollIndex);
+            if (selectedFormatIndex >= 0) {
+                const keys = Object.keys(byteFormats);
+                let start = 0;
+                for (let k = 0; k < selectedFormatIndex; ++k) start += byteFormats[keys[k]];
+                const highlightStart = start;
+                const highlightLen = byteFormats[keys[selectedFormatIndex]];
+                drawBinCanvasWithHighlight(binCanvas, arr, highlightStart, highlightLen, binScrollIndex);
+            } else {
+                drawBinCanvas(binCanvas, arr, binScrollIndex);
+            }
         } else if (e.deltaY < 0 && binScrollIndex > 0) {
             binScrollIndex--;
-            drawBinCanvas(binCanvas, arr, binScrollIndex);
+            if (selectedFormatIndex >= 0) {
+                const keys = Object.keys(byteFormats);
+                let start = 0;
+                for (let k = 0; k < selectedFormatIndex; ++k) start += byteFormats[keys[k]];
+                const highlightStart = start;
+                const highlightLen = byteFormats[keys[selectedFormatIndex]];
+                drawBinCanvasWithHighlight(binCanvas, arr, highlightStart, highlightLen, binScrollIndex);
+            } else {
+                drawBinCanvas(binCanvas, arr, binScrollIndex);
+            }
         }
         e.preventDefault();
     };
@@ -79,7 +104,7 @@ function updateByteFormatDisplay(arr) {
     let dragging = false, dragStartY = 0, dragStartIdx = 0;
     binCanvas.onmousedown = (e) => {
         // スクロールバーの位置・サイズ計算
-        const maxLines = 10;
+        const maxLines = 5;
         const cellH = 28;
         const barW = 12;
         const barH = Math.max(24, (maxLines / arr.length) * (cellH * maxLines));
@@ -100,7 +125,7 @@ function updateByteFormatDisplay(arr) {
     };
     binCanvas.onmousemove = (e) => {
         if (dragging) {
-            const maxLines = 10;
+            const maxLines = 5;
             const cellH = 28;
             const barH = Math.max(24, (maxLines / arr.length) * (cellH * maxLines));
             const maxScroll = Math.max(0, arr.length - maxLines);
@@ -110,7 +135,16 @@ function updateByteFormatDisplay(arr) {
             newIdx = Math.max(0, Math.min(maxScroll, newIdx));
             if (newIdx !== binScrollIndex) {
                 binScrollIndex = newIdx;
-                drawBinCanvas(binCanvas, arr, binScrollIndex);
+                if (selectedFormatIndex >= 0) {
+                    const keys = Object.keys(byteFormats);
+                    let start = 0;
+                    for (let k = 0; k < selectedFormatIndex; ++k) start += byteFormats[keys[k]];
+                    const highlightStart = start;
+                    const highlightLen = byteFormats[keys[selectedFormatIndex]];
+                    drawBinCanvasWithHighlight(binCanvas, arr, highlightStart, highlightLen, binScrollIndex);
+                } else {
+                    drawBinCanvas(binCanvas, arr, binScrollIndex);
+                }
             }
         }
     };
@@ -123,10 +157,10 @@ function drawBinCanvas(canvas, arr) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const maxLines = 10;
+    const maxLines = 5;
     const cellW = 22, cellH = 28;
     const offsetW = 48;
-    canvas.height = cellH * maxLines; // 常に10行分の高さに固定
+    canvas.height = cellH * maxLines; // 常に5行分の高さに固定
     ctx.font = '16px monospace';
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
@@ -166,6 +200,58 @@ function drawBinCanvas(canvas, arr) {
     }
 }
 
+// 2進数表示の強調描画用
+function drawBinCanvasWithHighlight(canvas, arr, highlightStartBit, highlightLenBit, scrollIdx) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const maxLines = 5;
+    const cellW = 22, cellH = 28;
+    const offsetW = 48;
+    canvas.height = cellH * maxLines;
+    ctx.font = '16px monospace';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    scrollIdx = scrollIdx || 0;
+    let lines = arr.slice(scrollIdx, scrollIdx + maxLines);
+    for (let i = 0; i < lines.length; ++i) {
+        const b = lines[i];
+        const y = i * cellH + cellH/2 + 4;
+        ctx.fillStyle = '#888';
+        ctx.textAlign = 'right';
+        ctx.fillText((scrollIdx + i).toString(16).padStart(2, '0').toUpperCase() + ':', offsetW-8, y);
+        ctx.textAlign = 'center';
+        const bits = b.toString(2).padStart(8, '0');
+        for (let j = 0; j < 8; ++j) {
+            const x = offsetW + j * cellW + cellW/2;
+            ctx.strokeStyle = '#888';
+            ctx.strokeRect(offsetW + j * cellW, i * cellH + 2, cellW, cellH);
+            const bitIdx = (i + scrollIdx) * 8 + j;
+            if (highlightLenBit > 0 && bitIdx >= highlightStartBit && bitIdx < highlightStartBit + highlightLenBit) {
+                // 強調表示する
+                ctx.font = 'bold 16px monospace';
+                ctx.fillStyle = '#222';
+            } else {
+                ctx.fillStyle = '#888';
+            }
+            ctx.fillText(bits[j], x, y);
+        }
+    }
+    // スクロールバー描画（drawBinCanvasと同じ処理）
+    if (arr.length > maxLines) {
+        const barW = 12;
+        const barX = canvas.width - barW - 2;
+        const barH = Math.max(24, (maxLines / arr.length) * (cellH * maxLines));
+        const maxScroll = Math.max(0, arr.length - maxLines);
+        const barY = (scrollIdx / (arr.length - maxLines)) * ((cellH * maxLines) - barH);
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = '#888';
+        ctx.fillRect(barX, barY, barW, barH);
+        ctx.restore();
+    }
+}
+
 // HEXダンプ選択→バイト配列入力欄反映
 function setByteArrayInputFromSelection() {
     if (!hexDumpApi) return;
@@ -174,7 +260,26 @@ function setByteArrayInputFromSelection() {
         // 16進2桁スペース区切り
         const str = arr.map(b => b.toString(16).padStart(2, '0')).join(' ');
         byte_input.value = str;
-        // 表示
+        // byteFormatCanvasの選択状態を管理
+        selectedFormatIndex = -1;
+        // キー名選択解除時にbyteFormatCanvasも再描画
+        const byteFormatCanvas = document.getElementById('byteFormatCanvas');
+        if (byteFormatCanvas) {
+            const ctx = byteFormatCanvas.getContext('2d');
+            const keys = Object.keys(byteFormats);
+            const itemHeight = 28;
+            const pad = 8;
+            const rowH = itemHeight + pad;
+            byteFormatCanvas.height = rowH * keys.length;
+            ctx.clearRect(0, 0, byteFormatCanvas.width, byteFormatCanvas.height);
+            ctx.font = '20px sans-serif';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#222';
+            keys.forEach((key, i) => {
+                ctx.fillText('・' + key, 12, i * rowH + rowH / 2);
+            });
+        }
+        // 表示（2進数強調も解除）
         updateByteFormatDisplay(arr);
     });
 }
@@ -215,6 +320,119 @@ fileInput.addEventListener('change', (event) => {
     if (!file) {
         return;
     }
+
+    // byteFormatCanvasにbyteFormatsのキー名を箇条書きで表示
+    const byteFormatCanvas = document.getElementById('byteFormatCanvas');
+    const ctx = byteFormatCanvas.getContext('2d');
+    ctx.clearRect(0, 0, byteFormatCanvas.width, byteFormatCanvas.height);
+    ctx.font = '20px sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#222';
+    ctx.textAlign = 'left';
+    const keys = Object.keys(byteFormats);
+    const itemHeight = 28;
+    // 文字サイズに合わせて背景とテキストを中央寄せで描画
+    const pad = 8; // 上下余白
+    const rowH = itemHeight + pad;
+    byteFormatCanvas.height = rowH * keys.length;
+    keys.forEach((key, i) => {
+        ctx.font = '20px sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#222';
+        ctx.fillText('・' + key, 12, i * rowH + rowH / 2);
+    });
+
+    // byteFormatCanvasの選択状態を管理
+    selectedFormatIndex = -1;
+
+    /*
+    // 2進数表示の強調描画用
+    function drawBinCanvasWithHighlight(canvas, arr, highlightStartBit, highlightLenBit, scrollIdx) {
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const maxLines = 5;
+        const cellW = 22, cellH = 28;
+        const offsetW = 48;
+        canvas.height = cellH * maxLines;
+        ctx.font = '16px monospace';
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        scrollIdx = scrollIdx || 0;
+        let lines = arr.slice(scrollIdx, scrollIdx + maxLines);
+        for (let i = 0; i < lines.length; ++i) {
+            const b = lines[i];
+            const y = i * cellH + cellH/2 + 4;
+            ctx.fillStyle = '#888';
+            ctx.textAlign = 'right';
+            ctx.fillText((scrollIdx + i).toString(16).padStart(2, '0').toUpperCase() + ':', offsetW-8, y);
+            ctx.textAlign = 'center';
+            const bits = b.toString(2).padStart(8, '0');
+            for (let j = 0; j < 8; ++j) {
+                const x = offsetW + j * cellW + cellW/2;
+                ctx.strokeStyle = '#888';
+                ctx.strokeRect(offsetW + j * cellW, i * cellH + 2, cellW, cellH);
+                const bitIdx = (i + scrollIdx) * 8 + j;
+                if (highlightLenBit > 0 && bitIdx >= highlightStartBit && bitIdx < highlightStartBit + highlightLenBit) {
+                    // 強調表示する
+                    ctx.font = 'bold 16px monospace';
+                    ctx.fillStyle = '#222';
+                } else {
+                    ctx.fillStyle = '#888';
+                }
+                ctx.fillText(bits[j], x, y);
+            }
+        }
+        // スクロールバー描画（drawBinCanvasと同じ処理）
+        if (arr.length > maxLines) {
+            const barW = 12;
+            const barX = canvas.width - barW - 2;
+            const barH = Math.max(24, (maxLines / arr.length) * (cellH * maxLines));
+            const maxScroll = Math.max(0, arr.length - maxLines);
+            const barY = (scrollIdx / (arr.length - maxLines)) * ((cellH * maxLines) - barH);
+            ctx.save();
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = '#888';
+            ctx.fillRect(barX, barY, barW, barH);
+            ctx.restore();
+        }
+    }
+    */
+
+    // 選択イベント追加
+    byteFormatCanvas.onclick = function(e) {
+        const y = e.offsetY;
+        const pad = 8;
+        const rowH = itemHeight + pad;
+        const idx = Math.floor(y / rowH);
+        if (idx >= 0 && idx < keys.length) {
+            selectedFormatIndex = idx;
+            // 再描画: 選択中は背景色
+            ctx.clearRect(0, 0, byteFormatCanvas.width, byteFormatCanvas.height);
+            keys.forEach((key, i) => {
+                ctx.font = '20px sans-serif';
+                ctx.textBaseline = 'middle';
+                if (i === idx) {
+                    ctx.fillStyle = '#cce5ff';
+                    ctx.fillRect(0, i * rowH, byteFormatCanvas.width, rowH);
+                    ctx.fillStyle = '#0056b3';
+                } else {
+                    ctx.fillStyle = '#222';
+                }
+                ctx.fillText('・' + key, 12, i * rowH + rowH / 2);
+            });
+
+            // 2進数canvasを強調描画
+            let start = 0;
+            for (let k = 0; k < idx; ++k) start += byteFormats[keys[k]];
+            const highlightStart = start;
+            const highlightLen = byteFormats[keys[idx]];
+            if (window._lastArrForBin) {
+                drawBinCanvasWithHighlight(binCanvas, window._lastArrForBin, highlightStart, highlightLen);
+            }
+        }
+    };
+
     // HexDump呼び出し時にAPI参照を取得
     hexDumpApi = HexDump(
         container,
