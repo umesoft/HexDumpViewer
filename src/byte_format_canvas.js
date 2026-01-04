@@ -1,7 +1,7 @@
 // byteFormatCanvasの表示・制御処理を集約
 import { drawBinCanvasWithHighlight } from './bin_dump_lib.js';
 
-export const byteFormats = { "ID": 6, "名前": 20, "設定値": 12 };
+export const byteFormats = { "ID": 2, "名前": 2, "設定値": 2 };
 
 export function resetByteFormatSelection(selectedFormatIndexRef) {
     selectedFormatIndexRef.value = -1;
@@ -48,12 +48,36 @@ export function setupByteFormatCanvasEvents(byteFormatCanvas, selectedFormatInde
                 }
                 ctx.fillText('・' + key, 12, i * rowH + rowH / 2);
             });
-            // 2進数canvasを強調描画
-            let start = 0;
-            for (let k = 0; k < idx; ++k) start += byteFormats[keys[k]];
-            const highlightStart = start;
-            const highlightLen = byteFormats[keys[idx]];
+            // 右隣に10進値のみ表示（該当ビット範囲の値）
             if (window._lastArrForBin) {
+                let start = 0;
+                for (let k = 0; k < idx; ++k) start += byteFormats[keys[k]];
+                const highlightStart = start;
+                const highlightLen = byteFormats[keys[idx]];
+                // 該当ビット範囲の値を10進で表示
+                let decVal = '-';
+                if (highlightLen > 0) {
+                    let val = 0n;
+                    for (let i = 0; i < highlightLen; ++i) {
+                        // 対象ビットがバイト配列内にあるか確認
+                        const bitIdx = highlightStart + i;
+                        const byteIdx = Math.floor(bitIdx / 8);
+                        const bitInByte = 7 - (bitIdx % 8);
+                        const arr = window._lastArrForBin;
+                        if (arr && arr.length > byteIdx) {
+                            const bit = (arr[byteIdx] >> bitInByte) & 1;
+                            val = (val << 1n) | BigInt(bit);
+                        } else {
+                            val = (val << 1n);
+                        }
+                    }
+                    decVal = val.toString(10);
+                }
+                ctx.font = '16px monospace';
+                ctx.fillStyle = '#333';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(` (${decVal})`, 120, idx * rowH + rowH / 2);
+                // 2進数canvasを強調描画
                 drawBinCanvasWithHighlight(binCanvas, window._lastArrForBin, highlightStart, highlightLen);
             }
         }
