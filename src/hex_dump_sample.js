@@ -2,7 +2,7 @@
 import { HexDump } from './hex_dump_lib.js';
 import { formatBytesByEndian } from './byte_format_view.js';
 import { drawBinCanvas, drawBinCanvasWithHighlight, updateByteFormatDisplay } from './bin_dump_lib.js';
-import { byteFormats, renderByteFormatCanvas, setupByteFormatCanvasEvents, resetByteFormatSelection } from './byte_format_canvas.js';
+import { byteFormats, renderByteFormatCanvas, setupByteFormatCanvasEvents, loadByteFormatsFromSetting, resetByteFormatSelection } from './byte_format_canvas.js';
 
 let hexDumpApi = null; // HexDumpのAPI参照用
 
@@ -119,11 +119,13 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     // byteFormatCanvasの初期描画とイベント登録
     const byteFormatCanvas = document.getElementById('byteFormatCanvas');
-    if (byteFormatCanvas) {
-        renderByteFormatCanvas(byteFormatCanvas, { value: selectedFormatIndex });
-        setupByteFormatCanvasEvents(byteFormatCanvas, { value: selectedFormatIndex }, binCanvas);
-    }
-
+    // 設定ファイルを読み込んでbyteFormatsを初期化
+    loadByteFormatsFromSetting().then(() => {
+        if (byteFormatCanvas) {
+            renderByteFormatCanvas(byteFormatCanvas, { value: selectedFormatIndex });
+            setupByteFormatCanvasEvents(byteFormatCanvas, { value: selectedFormatIndex }, binCanvas);
+        }
+    });
     // HEXダンプcanvasクリック・選択時に反映
     container.addEventListener('mouseup', setByteArrayInputFromSelection);
     container.addEventListener('keyup', setByteArrayInputFromSelection);

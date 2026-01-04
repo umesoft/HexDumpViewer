@@ -1,7 +1,21 @@
 // byteFormatCanvasの表示・制御処理を集約
 import { drawBinCanvasWithHighlight } from './bin_dump_lib.js';
 
-export const byteFormats = { "ID": 2, "名前": 2, "設定値": 2 };
+export let byteFormats = {};
+
+// 設定ファイルを読み込んでbyteFormatsを初期化
+export async function loadByteFormatsFromSetting(path = './format_setting.json') {
+    try {
+        const res = await fetch(path);
+        if (!res.ok) throw new Error('設定ファイルの読み込みに失敗しました');
+        const json = await res.json();
+        byteFormats = json;
+    } catch (e) {
+        // デフォルト値
+        byteFormats = { "ID": 2, "名前": 4, "設定値": 3 };
+        alert('format_setting.jsonの読み込みエラー:', e);
+    }
+}
 
 export function resetByteFormatSelection(selectedFormatIndexRef) {
     selectedFormatIndexRef.value = -1;
